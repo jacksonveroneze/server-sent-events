@@ -1,15 +1,18 @@
 # Quotations Realtime (SSE)
 
 API em .NET 10 que transmite cotações em tempo real para o browser via **Server-Sent Events**
-(SSE nativo do ASP.NET Core, sem SignalR). As cotações são geradas por um producer e distribuídas
-através do **RabbitMQ**, e o tráfego de entrada é balanceado por um **Traefik** na frente de duas
-réplicas da API.
+(SSE nativo do ASP.NET Core, sem SignalR). As cotações são geradas por um projeto console separado
+(`Producer`) e distribuídas através do **RabbitMQ**; a API (`Api`) só consome e retransmite via SSE
+— não publica nada. O tráfego de entrada é balanceado por um **Traefik** na frente de duas réplicas
+da API.
 
 ## Arquitetura
 
 ```mermaid
 flowchart TB
     browser["Browser<br/>EventSource (SSE)"]
+
+    producer["producer<br/>QuotationProducerService"]
 
     subgraph traefik["Traefik — load_balancer · :8080"]
         direction TB
@@ -22,7 +25,6 @@ flowchart TB
         ep1["QuotationEndpoints<br/>GET /quotations/realtime"]
         bc1["QuotationBroadcaster<br/>(singleton, por processo)"]
         cons1["QuotationConsumerService"]
-        prod1["QuotationProducerService"]
         cons1 -->|"Publish(quotation)"| bc1
         bc1 -->|"fan-out em memória"| ep1
     end
@@ -32,7 +34,6 @@ flowchart TB
         ep2["QuotationEndpoints<br/>GET /quotations/realtime"]
         bc2["QuotationBroadcaster<br/>(singleton, por processo)"]
         cons2["QuotationConsumerService"]
-        prod2["QuotationProducerService"]
         cons2 -->|"Publish(quotation)"| bc2
         bc2 -->|"fan-out em memória"| ep2
     end
@@ -50,8 +51,7 @@ flowchart TB
     traefik -->|round-robin| api1
     traefik -->|round-robin| api2
 
-    prod1 -->|"publish (routingKey vazio)"| exch
-    prod2 -->|"publish (routingKey vazio)"| exch
+    producer -->|"publish (routingKey vazio)"| exch
     q1 -->|consume| cons1
     q2 -->|consume| cons2
 ```
@@ -71,8 +71,9 @@ qualquer cliente SSE vê o mesmo stream completo, não importa a qual réplica o
 
 ## Configuração
 
-As opções do RabbitMQ ficam em `Quotations.Realtime.Api/appsettings.json`, seção `RabbitMq`, e
-podem ser sobrescritas por variáveis de ambiente (`RabbitMq__HostName`, etc.) sem editar o arquivo:
+As opções do RabbitMQ ficam na seção `RabbitMq` de `Api/appsettings.json` (consumer) e
+`Producer/appsettings.json` (producer) — mesmo formato nos dois — e podem ser sobrescritas por
+variáveis de ambiente (`RabbitMq__HostName`, etc.) sem editar o arquivo:
 
 | Chave          | Descrição                                              | Valor de exemplo       |
 |----------------|---------------------------------------------------------|-------------------------|
@@ -87,17 +88,17 @@ podem ser sobrescritas por variáveis de ambiente (`RabbitMq__HostName`, etc.) s
 
 ## Como subir
 
-### Opção A — Docker Compose (Traefik + 2 réplicas da API)
+### Opção A — Docker Compose (Traefik + 2 réplicas da API + producer)
 
 ```bash
-cd Quotations.Realtime.Api
 docker compose up --build -d
 docker compose ps
 ```
 
 Isso sobe:
 - `loadbalancer` (Traefik) expondo `http://localhost:8080`, roteando `PathPrefix(/quotations-realtime-sse)` para o serviço `api`;
-- `api` com 2 réplicas (`deploy.replicas: 2`), cada uma conectando ao RabbitMQ configurado em `appsettings.json`/variáveis de ambiente.
+- `api` com 2 réplicas (`deploy.replicas: 2`), só consumindo do RabbitMQ e retransmitindo via SSE;
+- `producer`, que gera cotações fake e as publica no RabbitMQ a cada 750ms.
 
 > **Atenção:** o healthcheck do serviço `api` no `docker-compose.yml` aponta para
 > `/health/live?source=docker`, mas a aplicação só expõe `/health` (ver `Program.cs`). Enquanto
@@ -108,13 +109,21 @@ Isso sobe:
 
 ### Opção B — Localmente com `dotnet run` (uma única instância)
 
+Sem o `producer` rodando, a API não recebe nenhuma cotação — suba os dois, em terminais separados:
+
 ```bash
-cd Quotations.Realtime.Api
+cd Api
 dotnet run
 ```
 
-Sobe em `http://localhost:7000` (perfil `http` de `Properties/launchSettings.json`), sem Traefik e
-sem múltiplas réplicas — útil para desenvolvimento e depuração.
+```bash
+cd Producer
+dotnet run
+```
+
+A API sobe em `http://localhost:7000` (perfil `http` de `Properties/launchSettings.json`), sem
+Traefik e sem múltiplas réplicas — útil para desenvolvimento e depuração. O `Producer` não expõe
+porta nenhuma, só publica no RabbitMQ.
 
 ## Como usar
 
