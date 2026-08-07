@@ -56,7 +56,7 @@ public class QuotationProducerService(
             {
                 var quotation = new Quotation(
                     TickerId: TickerIds[random.Next(TickerIds.Length)],
-                    Value: Math.Round((decimal)(random.Next(-10, 10)), 2)
+                    Value: Math.Round((decimal)(random.Next(-50, 50)), 2)
                 );
 
                 var body = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(quotation));

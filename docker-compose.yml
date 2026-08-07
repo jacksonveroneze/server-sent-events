@@ -54,6 +54,8 @@ services:
     depends_on:
       api:
         condition: service_healthy
+      ui:
+        condition: service_healthy
     ports:
       - "8080:80"
       - "127.0.0.1:8081:8081"
@@ -114,8 +116,14 @@ services:
       - traefik.http.middlewares.rate-limit.ratelimit.period=1s
       - traefik.http.middlewares.circuit-breaker.circuitbreaker.expression=LatencyAtQuantileMS(95.0) > 5000 || NetworkErrorRatio() > 0.5
 
+      - traefik.http.middlewares.cors.headers.accesscontrolallowmethods=GET,OPTIONS,PUT
+      - traefik.http.middlewares.cors.headers.accesscontrolallowheaders=*
+      - traefik.http.middlewares.cors.headers.accesscontrolalloworiginlist=*
+      - traefik.http.middlewares.cors.headers.accesscontrolmaxage=100
+      - traefik.http.middlewares.cors.headers.addvaryheader=true
+
       # Apply middlewares
-      - traefik.http.routers.api_service.middlewares=strip-prefix,compress,rate-limit,circuit-breaker
+      - traefik.http.routers.api_service.middlewares=strip-prefix,compress,rate-limit,circuit-breaker,cors
     logging:
       driver: "json-file"
       options:
@@ -152,3 +160,44 @@ services:
         reservations:
           cpus: '0.1'
           memory: '128M'
+
+  ui:
+    image: quotations-realtime-ui:latest
+    restart: unless-stopped
+    read_only: true
+    build:
+      context: ./ui
+      dockerfile: ./Dockerfile
+    healthcheck:
+      test: [ "CMD-SHELL", "wget -qO- http://127.0.0.1/ >/dev/null 2>&1 || exit 1" ]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 2s
+    tmpfs:
+      - /var/cache/nginx
+      - /var/run
+    labels:
+      - traefik.enable=true
+
+      # Router configuration
+      - traefik.http.routers.ui_service.rule=PathPrefix(`/`)
+      - traefik.http.routers.ui_service.entrypoints=http
+      - traefik.http.routers.ui_service.tls=false
+
+      # Service configuration
+      - traefik.http.services.ui_service.loadbalancer.server.port=80
+      - traefik.http.services.ui_service.loadbalancer.server.scheme=http
+    logging:
+      driver: "json-file"
+      options:
+        max-file: "2"
+        max-size: "1m"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: '128M'
+        reservations:
+          cpus: '0.1'
+          memory: '64M'
