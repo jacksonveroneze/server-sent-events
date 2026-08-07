@@ -28,7 +28,6 @@ public class QuotationProducerService(
         var factory = new ConnectionFactory
         {
             HostName = rabbitMqOptions.HostName,
-            VirtualHost = rabbitMqOptions.VirtualHost,
             UserName = rabbitMqOptions.UserName,
             Password = rabbitMqOptions.Password
         };

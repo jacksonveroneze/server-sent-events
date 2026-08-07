@@ -83,6 +83,8 @@ services:
     build:
       context: .
       dockerfile: ./Api/Dockerfile
+    environment:
+      - RabbitMq__HostName=rabbitmq
     healthcheck:
       test: curl http://localhost:8080/health/live?source=docker || exit 1
       interval: 10s
@@ -147,6 +149,8 @@ services:
     build:
       context: .
       dockerfile: ./Producer/Dockerfile
+    environment:
+      - RabbitMq__HostName=rabbitmq
     logging:
       driver: "json-file"
       options:
@@ -162,6 +166,7 @@ services:
           memory: '128M'
 
   ui:
+    container_name: ui
     image: quotations-realtime-ui:latest
     restart: unless-stopped
     read_only: true
@@ -201,3 +206,41 @@ services:
         reservations:
           cpus: '0.1'
           memory: '64M'
+          
+  rabbitmq:
+    container_name: rabbitmq
+    image: rabbitmq:3-management-alpine
+    restart: unless-stopped
+    healthcheck:
+      test: rabbitmq-diagnostics check_port_connectivity
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+      - "15692:15692"
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq/
+    logging:
+      driver: "json-file"
+      options:
+        max-file: "2"
+        max-size: "1m"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 256M
+        reservations:
+          cpus: '0.50'
+          memory: 256M
+          
+volumes:
+  rabbitmq-data:
+    driver: local
+    name: infra-rabbitmq-data
