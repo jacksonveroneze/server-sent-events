@@ -1,8 +1,8 @@
 using System.Collections.Concurrent;
 using System.Threading.Channels;
-using Orders.Realtime.Api.Models;
+using Quotations.Realtime.Api.Models;
 
-namespace Orders.Realtime.Api.Services.Quotations;
+namespace Quotations.Realtime.Api.Services.Quotations;
 
 public class QuotationBroadcaster
 {

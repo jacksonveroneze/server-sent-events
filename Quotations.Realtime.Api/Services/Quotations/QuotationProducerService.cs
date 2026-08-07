@@ -1,11 +1,11 @@
 using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Options;
-using Orders.Realtime.Api.Configurations;
-using Orders.Realtime.Api.Models;
+using Quotations.Realtime.Api.Configurations;
+using Quotations.Realtime.Api.Models;
 using RabbitMQ.Client;
 
-namespace Orders.Realtime.Api.Services.Quotations;
+namespace Quotations.Realtime.Api.Services.Quotations;
 
 public class QuotationProducerService(
     IOptions<RabbitMqOptions> options,

@@ -1,8 +1,8 @@
 using System.Runtime.CompilerServices;
-using Orders.Realtime.Api.Models;
-using Orders.Realtime.Api.Services.Quotations;
+using Quotations.Realtime.Api.Models;
+using Quotations.Realtime.Api.Services.Quotations;
 
-namespace Orders.Realtime.Api.Endpoints;
+namespace Quotations.Realtime.Api.Endpoints;
 
 public static class QuotationEndpoints
 {

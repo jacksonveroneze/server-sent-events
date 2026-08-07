@@ -1,6 +1,6 @@
-using Orders.Realtime.Api.Configurations;
-using Orders.Realtime.Api.Endpoints;
-using Orders.Realtime.Api.Services.Quotations;
+using Quotations.Realtime.Api.Configurations;
+using Quotations.Realtime.Api.Endpoints;
+using Quotations.Realtime.Api.Services.Quotations;
 
 var builder = WebApplication.CreateSlimBuilder(args);
 

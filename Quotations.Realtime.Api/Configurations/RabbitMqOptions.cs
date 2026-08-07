@@ -1,4 +1,4 @@
-namespace Orders.Realtime.Api.Configurations;
+namespace Quotations.Realtime.Api.Configurations;
 
 public record RabbitMqOptions
 {

@@ -1,4 +1,4 @@
-namespace Orders.Realtime.Api.Models;
+namespace Quotations.Realtime.Api.Models;
 
 public record Quotation(
     string TickerId,
