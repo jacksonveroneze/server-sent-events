@@ -4,7 +4,8 @@ using Quotations.Realtime.Api.Models;
 
 namespace Quotations.Realtime.Api.Services.Quotations;
 
-public class QuotationBroadcaster
+public class QuotationBroadcaster(
+    ILogger<QuotationBroadcaster> logger)
 {
     private readonly ConcurrentDictionary<string, Channel<Quotation>> _subscribers = new();
 
@@ -20,6 +21,9 @@ public class QuotationBroadcaster
 
         _subscribers[connectionId] = channel;
 
+        logger.LogInformation("Client {ConnectionId} subscribed to quotations", connectionId);
+        logger.LogInformation("Total subscribers {SubscriberCount}", _subscribers.Count);
+
         return (connectionId, channel.Reader);
     }
 
@@ -27,6 +31,9 @@ public class QuotationBroadcaster
     {
         if (_subscribers.TryRemove(id, out var channel))
         {
+            logger.LogInformation("Client {ConnectionId} unsubscribed from quotations", id);
+            logger.LogInformation("Total subscribers {SubscriberCount}", _subscribers.Count);
+
             channel.Writer.TryComplete();
         }
     }
