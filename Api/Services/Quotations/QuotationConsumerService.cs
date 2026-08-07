@@ -1,8 +1,8 @@
 using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Options;
-using Quotations.Realtime.Api.Configurations;
-using Quotations.Realtime.Api.Models;
+using Quotations.Realtime.Shared.Configurations;
+using Quotations.Realtime.Shared.Models;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 
@@ -40,7 +40,7 @@ public class QuotationConsumerService(
             cancellationToken: cancellationToken);
 
         var queueDeclareResult = await _channel.QueueDeclareAsync(
-            queue: string.Empty,
+            queue: $"consumer-{Guid.NewGuid()}",
             durable: false,
             exclusive: true,
             autoDelete: true,

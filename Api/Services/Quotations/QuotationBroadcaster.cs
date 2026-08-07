@@ -1,6 +1,6 @@
 using System.Collections.Concurrent;
 using System.Threading.Channels;
-using Quotations.Realtime.Api.Models;
+using Quotations.Realtime.Shared.Models;
 
 namespace Quotations.Realtime.Api.Services.Quotations;
 

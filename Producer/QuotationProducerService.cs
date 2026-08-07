@@ -1,11 +1,11 @@
 using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Options;
-using Quotations.Realtime.Api.Configurations;
-using Quotations.Realtime.Api.Models;
+using Quotations.Realtime.Shared.Configurations;
+using Quotations.Realtime.Shared.Models;
 using RabbitMQ.Client;
 
-namespace Quotations.Realtime.Api.Services.Quotations;
+namespace Quotations.Realtime.Producer;
 
 public class QuotationProducerService(
     IOptions<RabbitMqOptions> options,
@@ -67,8 +67,8 @@ public class QuotationProducerService(
                     body: body,
                     cancellationToken: stoppingToken);
 
-                // logger.LogInformation(
-                //     "Published quotation: {TickerId} for {Value}", quotation.TickerId, quotation.Value);
+                logger.LogInformation(
+                    "Published quotation: {TickerId} for {Value}", quotation.TickerId, quotation.Value);
 
                 await Task.Delay(TimeSpan.FromMilliseconds(750), stoppingToken);
             }

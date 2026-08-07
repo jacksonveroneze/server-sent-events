@@ -1,3 +1,5 @@
 <Solution>
   <Project Path="Api\Api.csproj" />
+  <Project Path="Producer\Producer.csproj" />
+  <Project Path="Shared\Shared.csproj" />
 </Solution>

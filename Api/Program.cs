@@ -1,13 +1,12 @@
-using Quotations.Realtime.Api.Configurations;
 using Quotations.Realtime.Api.Endpoints;
 using Quotations.Realtime.Api.Services.Quotations;
+using Quotations.Realtime.Shared.Configurations;
 
 var builder = WebApplication.CreateSlimBuilder(args);
 
 builder.Services.AddSingleton<QuotationBroadcaster>();
 builder.Services.Configure<RabbitMqOptions>(
     builder.Configuration.GetSection("RabbitMq"));
-builder.Services.AddHostedService<QuotationProducerService>();
 builder.Services.AddHostedService<QuotationConsumerService>();
 
 builder.Services.AddCors()

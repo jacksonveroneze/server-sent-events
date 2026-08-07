@@ -5,18 +5,18 @@ FROM mcr.microsoft.com/dotnet/sdk:10.0-noble AS publish
 
 WORKDIR /src
 
-COPY Api/Api.csproj ./Api/
+COPY Producer/Producer.csproj ./Producer/
 COPY Shared/Shared.csproj ./Shared/
 COPY *.slnx ./
 
-RUN dotnet restore ./Api/Api.csproj \
+RUN dotnet restore ./Producer/Producer.csproj \
     -r linux-x64 \
     -p:PublishReadyToRun=true
 
-COPY Api/. ./Api/
+COPY Producer/. ./Producer/
 COPY Shared/. ./Shared/
 
-RUN dotnet publish ./Api/Api.csproj \
+RUN dotnet publish ./Producer/Producer.csproj \
     -c Release \
     -r linux-x64 \
     --self-contained false \
@@ -37,6 +37,6 @@ ENV DOTNET_GCDynamicAdaptationMode=1 \
     DOTNET_TieredCompilation=1 \
     DOTNET_TC_QuickJitForLoops=1
 
-ENV ASSEMBLY_NAME=/home/app/Api.dll
+ENV ASSEMBLY_NAME=/home/app/Producer.dll
 
 COPY --from=publish /publish /home/app

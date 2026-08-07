@@ -1,5 +1,5 @@
 using System.Runtime.CompilerServices;
-using Quotations.Realtime.Api.Models;
+using Quotations.Realtime.Shared.Models;
 using Quotations.Realtime.Api.Services.Quotations;
 
 namespace Quotations.Realtime.Api.Endpoints;

@@ -1,6 +1,6 @@
 services:
   load_balancer:
-    container_name: loadbalancer
+    container_name: load_balancer
     image: traefik:v3.7
     restart: unless-stopped
     read_only: true
@@ -80,7 +80,7 @@ services:
     read_only: true
     build:
       context: .
-      dockerfile: ./Dockerfile
+      dockerfile: ./Api/Dockerfile
     healthcheck:
       test: curl http://localhost:8080/health/live?source=docker || exit 1
       interval: 10s
@@ -130,4 +130,25 @@ services:
           memory: '512M'
         reservations:
           cpus: '0.25'
-          memory: '512M'
+          memory: '256M'
+
+  producer:
+    image: quotations-realtime-producer:latest
+    restart: unless-stopped
+    read_only: true
+    build:
+      context: .
+      dockerfile: ./Producer/Dockerfile
+    logging:
+      driver: "json-file"
+      options:
+        max-file: "2"
+        max-size: "1m"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: '256M'
+        reservations:
+          cpus: '0.1'
+          memory: '128M'
