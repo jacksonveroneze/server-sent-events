@@ -1,6 +1,5 @@
 using System.Runtime.CompilerServices;
 using Orders.Realtime.Api.Models;
-using Orders.Realtime.Api.Services;
 using Orders.Realtime.Api.Services.Quotations;
 
 namespace Orders.Realtime.Api.Endpoints;
@@ -12,9 +11,11 @@ public static class QuotationEndpoints
     {
         app.MapGet("quotations/realtime", (
             QuotationBroadcaster broadcaster,
+            HttpContext context,
             CancellationToken cancellationToken) =>
         {
-            var stream = StreamQuotations(broadcaster, cancellationToken);
+            var stream = StreamQuotations(
+                broadcaster, context, cancellationToken);
 
             return Results.ServerSentEvents(stream, "quotations");
         });
@@ -22,13 +23,15 @@ public static class QuotationEndpoints
 
     private static async IAsyncEnumerable<Quotation> StreamQuotations(
         QuotationBroadcaster broadcaster,
+        HttpContext context,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        var (id, reader) = broadcaster.Subscribe();
+        var (id, reader) = broadcaster.Subscribe(context.Connection.Id);
 
         try
         {
-            await foreach (var quotation in reader.ReadAllAsync(cancellationToken))
+            await foreach (var quotation in reader
+                               .ReadAllAsync(cancellationToken))
             {
                 yield return quotation;
             }
