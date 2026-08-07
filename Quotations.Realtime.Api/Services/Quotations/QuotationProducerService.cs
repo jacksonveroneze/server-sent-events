@@ -36,11 +36,10 @@ public class QuotationProducerService(
         _connection = await factory.CreateConnectionAsync(cancellationToken);
         _channel = await _connection.CreateChannelAsync(cancellationToken: cancellationToken);
 
-        await _channel.QueueDeclareAsync(
-            queue: rabbitMqOptions.QueueName,
+        await _channel.ExchangeDeclareAsync(
+            exchange: rabbitMqOptions.ExchangeName,
+            type: ExchangeType.Fanout,
             durable: true,
-            exclusive: false,
-            autoDelete: false,
             cancellationToken: cancellationToken);
 
         await base.StartAsync(cancellationToken);
@@ -63,8 +62,8 @@ public class QuotationProducerService(
                 var body = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(quotation));
 
                 await _channel!.BasicPublishAsync(
-                    exchange: string.Empty,
-                    routingKey: rabbitMqOptions.QueueName,
+                    exchange: rabbitMqOptions.ExchangeName,
+                    routingKey: string.Empty,
                     body: body,
                     cancellationToken: stoppingToken);
 

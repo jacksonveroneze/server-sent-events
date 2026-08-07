@@ -10,9 +10,12 @@ builder.Services.Configure<RabbitMqOptions>(
 builder.Services.AddHostedService<QuotationProducerService>();
 builder.Services.AddHostedService<QuotationConsumerService>();
 
-builder.Services.AddCors();
+builder.Services.AddCors()
+    .AddHealthChecks();
 
 var app = builder.Build();
+
+app.MapHealthChecks("/health");
 
 app.UseCors(p => p.AllowAnyHeader()
     .AllowAnyMethod()

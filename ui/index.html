@@ -42,7 +42,8 @@
 
       // EventSource automatically handles reconnection and Last-Event-ID header
       const eventSource = new EventSource(
-        "http://localhost:7000/quotations/realtime"
+        //"http://localhost:7000/quotations/realtime"
+        "http://localhost:8080/quotations-realtime-sse/quotations/realtime"
       );
 
       eventSource.addEventListener("quotations", (event) => {

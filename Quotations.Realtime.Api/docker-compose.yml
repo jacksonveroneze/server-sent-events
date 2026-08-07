@@ -1,0 +1,133 @@
+services:
+  load_balancer:
+    container_name: loadbalancer
+    image: traefik:v3.7
+    restart: unless-stopped
+    read_only: true
+    command:
+      # EntryPoints
+      - --entrypoints.http.address=:80
+
+      - --entrypoints.ping.address=:8081
+      - --entrypoints.metrics.address=:8082
+      - --entrypoints.traefik.address=:8083
+
+      # Providers
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+
+      # API & Dashboard
+      - --api.dashboard=true
+      - --api.insecure=false
+
+      # Ping endpoint
+      - --ping=true
+      - --ping.entrypoint=ping
+
+      # Observability
+      - --log.level=INFO
+      - --accesslog=true
+      - --metrics.prometheus=true
+      - --metrics.prometheus.entrypoint=metrics
+      - --metrics.prometheus.addServicesLabels=true
+
+      # Timeouts
+      - --serversTransport.forwardingTimeouts.dialTimeout=10s
+      - --serversTransport.forwardingTimeouts.responseHeaderTimeout=10s
+
+      # Load Balancing
+      - --providers.docker.defaultRule=Host(`localhost`)
+    labels:
+      - traefik.enable=true
+
+      # Dashboard
+      - traefik.http.routers.dashboard.rule=Host(`localhost`)
+      - traefik.http.routers.dashboard.entrypoints=traefik
+      - traefik.http.routers.dashboard.service=api@internal
+      - traefik.http.routers.dashboard.tls=true
+    healthcheck:
+      test: [ "CMD-SHELL", "wget -qO- http://127.0.0.1:8081/ping >/dev/null 2>&1 || exit 1" ]
+      interval: 15s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "8080:80"
+      - "127.0.0.1:8081:8081"
+      - "127.0.0.1:8082:8082"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    logging:
+      driver: "json-file"
+      options:
+        max-file: "2"
+        max-size: "1m"
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '1'
+          memory: 512M
+
+  api:
+    image: quotations-realtime-sse:latest
+    restart: unless-stopped
+    read_only: true
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    healthcheck:
+      test: curl http://localhost:8080/health/live?source=docker || exit 1
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    stop_grace_period: 30s
+    labels:
+      - traefik.enable=true
+
+      # Router configuration
+      - traefik.http.routers.api_service.rule=PathPrefix(`/quotations-realtime-sse`)
+      - traefik.http.routers.api_service.entrypoints=http
+      - traefik.http.routers.api_service.tls=false
+
+      # Service configuration
+      - traefik.http.services.api_service.loadbalancer.server.port=8080
+      - traefik.http.services.api_service.loadbalancer.server.scheme=http
+      - traefik.http.services.api_service.loadbalancer.passhostheader=true
+      - traefik.http.services.api_service.loadbalancer.healthcheck.path=/health?source=traefik
+      - traefik.http.services.api_service.loadbalancer.healthcheck.port=8080
+      - traefik.http.services.api_service.loadbalancer.healthcheck.scheme=http
+      - traefik.http.services.api_service.loadbalancer.healthcheck.interval=10s
+      - traefik.http.services.api_service.loadbalancer.healthcheck.timeout=3s
+
+      # Middlewares definitions
+      - traefik.http.middlewares.strip-prefix.stripprefix.prefixes=/quotations-realtime-sse
+      - traefik.http.middlewares.compress.compress=true
+      - traefik.http.middlewares.rate-limit.ratelimit.average=100000
+      - traefik.http.middlewares.rate-limit.ratelimit.burst=5000
+      - traefik.http.middlewares.rate-limit.ratelimit.period=1s
+      - traefik.http.middlewares.circuit-breaker.circuitbreaker.expression=LatencyAtQuantileMS(95.0) > 5000 || NetworkErrorRatio() > 0.5
+
+      # Apply middlewares
+      - traefik.http.routers.api_service.middlewares=strip-prefix,compress,rate-limit,circuit-breaker
+    logging:
+      driver: "json-file"
+      options:
+        max-file: "2"
+        max-size: "1m"
+    deploy:
+      replicas: 2
+      mode: replicated
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: '512M'
+        reservations:
+          cpus: '0.25'
+          memory: '512M'

@@ -16,6 +16,7 @@ public class QuotationConsumerService(
 {
     private IConnection? _connection;
     private IChannel? _channel;
+    private string _queueName = string.Empty;
 
     public override async Task StartAsync(CancellationToken cancellationToken)
     {
@@ -32,11 +33,25 @@ public class QuotationConsumerService(
         _connection = await factory.CreateConnectionAsync(cancellationToken);
         _channel = await _connection.CreateChannelAsync(cancellationToken: cancellationToken);
 
-        await _channel.QueueDeclareAsync(
-            queue: rabbitMqOptions.QueueName,
+        await _channel.ExchangeDeclareAsync(
+            exchange: rabbitMqOptions.ExchangeName,
+            type: ExchangeType.Fanout,
             durable: true,
-            exclusive: false,
-            autoDelete: false,
+            cancellationToken: cancellationToken);
+
+        var queueDeclareResult = await _channel.QueueDeclareAsync(
+            queue: string.Empty,
+            durable: false,
+            exclusive: true,
+            autoDelete: true,
+            cancellationToken: cancellationToken);
+
+        _queueName = queueDeclareResult.QueueName;
+
+        await _channel.QueueBindAsync(
+            queue: _queueName,
+            exchange: rabbitMqOptions.ExchangeName,
+            routingKey: string.Empty,
             cancellationToken: cancellationToken);
 
         await _channel.BasicQosAsync(
@@ -62,8 +77,8 @@ public class QuotationConsumerService(
                 {
                     broadcaster.Publish(quotation);
 
-                    logger.LogInformation(
-                        "Consumed quotation: {TickerId} for {Value}", quotation.TickerId, quotation.Value);
+                    // logger.LogInformation(
+                    //     "Consumed quotation: {TickerId} for {Value}", quotation.TickerId, quotation.Value);
                 }
 
                 await _channel!.BasicAckAsync(ea.DeliveryTag, multiple: false, stoppingToken);
@@ -75,10 +90,8 @@ public class QuotationConsumerService(
             }
         };
 
-        var rabbitMqOptions = options.Value;
-
         await _channel!.BasicConsumeAsync(
-            queue: rabbitMqOptions.QueueName,
+            queue: _queueName,
             autoAck: false,
             consumer: consumer,
             cancellationToken: stoppingToken);
