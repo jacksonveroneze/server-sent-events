@@ -1,3 +1,3 @@
 <Solution>
-  <Project Path="Quotations.Realtime.Api\Api.csproj" />
+  <Project Path="Api\Api.csproj" />
 </Solution>

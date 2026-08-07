@@ -63,26 +63,6 @@ as duas réplicas consumissem a **mesma fila nomeada**, o RabbitMQ dividiria as 
 fila exclusiva por réplica, toda mensagem publicada é copiada para todas as réplicas vivas, então
 qualquer cliente SSE vê o mesmo stream completo, não importa a qual réplica o Traefik o conectou.
 
-## Estrutura do projeto
-
-```
-Quotations.Realtime.Api/
-├── Api.csproj
-├── Dockerfile
-├── docker-compose.yml
-├── appsettings.json
-├── Configurations/RabbitMqOptions.cs
-├── Endpoints/QuotationEndpoints.cs      # endpoint SSE
-├── Models/Quotation.cs                  # payload trafegado
-├── Services/Quotations/
-│   ├── QuotationBroadcaster.cs          # fan-out em memória para os clientes SSE
-│   ├── QuotationProducerService.cs      # gera cotações fake e publica no RabbitMQ
-│   └── QuotationConsumerService.cs      # consome do RabbitMQ e alimenta o broadcaster
-└── Program.cs
-ui/
-└── index.html                           # frontend estático de demonstração
-```
-
 ## Pré-requisitos
 
 - [.NET 10 SDK](https://dotnet.microsoft.com/) (para rodar localmente sem Docker)
